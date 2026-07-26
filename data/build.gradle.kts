@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -50,6 +51,10 @@ dependencies {
 
     // DataStore
     implementation(libs.androidx.datastore.preferences)
+
+    // Networking + serialization (remote model configuration)
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
 
     // WorkManager + Hilt worker support
     implementation(libs.androidx.work.runtime.ktx)

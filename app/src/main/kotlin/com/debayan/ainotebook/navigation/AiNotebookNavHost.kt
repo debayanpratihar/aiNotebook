@@ -2,16 +2,17 @@ package com.debayan.ainotebook.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import com.debayan.ainotebook.feature.canvas.navigation.NotebookCanvasDestination
+import com.debayan.ainotebook.feature.canvas.navigation.notebookCanvasScreen
+import com.debayan.ainotebook.home.HomeRoute
 
 /**
- * Root navigation graph. Wires every primary destination from the spec to a placeholder screen for
- * Phase 1. The Home destination demonstrates real navigation to the other destinations; feature
- * modules will swap in their screens without changing this graph's shape.
+ * Root navigation graph. Home and the notebook canvas are live; the remaining destinations are
+ * placeholders that their feature modules replace in later phases. The notebook destination is
+ * contributed by the canvas feature via [notebookCanvasScreen].
  */
 @Composable
 fun AiNotebookNavHost(
@@ -22,31 +23,13 @@ fun AiNotebookNavHost(
         startDestination = Routes.HOME,
     ) {
         composable(Routes.HOME) {
-            PlaceholderScreen(
-                title = "Home",
-                actions = listOf(
-                    PlaceholderAction("Open sample notebook") {
-                        navController.navigate(Routes.notebook("sample"))
-                    },
-                    PlaceholderAction("Search") { navController.navigate(Routes.SEARCH) },
-                    PlaceholderAction("Model Manager") { navController.navigate(Routes.MODEL_MANAGER) },
-                    PlaceholderAction("Settings") { navController.navigate(Routes.SETTINGS) },
-                    PlaceholderAction("Export") { navController.navigate(Routes.EXPORT) },
-                    PlaceholderAction("About") { navController.navigate(Routes.ABOUT) },
-                ),
+            HomeRoute(
+                onOpenNotebook = { id -> navController.navigate(NotebookCanvasDestination.route(id)) },
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
             )
         }
 
-        composable(
-            route = Routes.NOTEBOOK,
-            arguments = listOf(navArgument(Routes.NOTEBOOK_ARG_ID) { type = NavType.StringType }),
-        ) { backStackEntry ->
-            val notebookId = backStackEntry.arguments?.getString(Routes.NOTEBOOK_ARG_ID).orEmpty()
-            PlaceholderScreen(
-                title = "Notebook ($notebookId)",
-                onBack = { navController.popBackStack() },
-            )
-        }
+        notebookCanvasScreen(onBack = { navController.popBackStack() })
 
         composable(Routes.SEARCH) {
             PlaceholderScreen(title = "Search", onBack = { navController.popBackStack() })

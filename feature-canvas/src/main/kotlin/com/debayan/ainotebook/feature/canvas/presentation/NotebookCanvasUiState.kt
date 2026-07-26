@@ -1,0 +1,19 @@
+package com.debayan.ainotebook.feature.canvas.presentation
+
+import com.debayan.ainotebook.domain.model.canvas.Page
+import com.debayan.ainotebook.domain.model.canvas.Stroke
+import com.debayan.ainotebook.feature.canvas.engine.BrushSettings
+import com.debayan.ainotebook.feature.canvas.engine.CanvasToolMode
+
+/** Immutable UI state for the notebook canvas screen. */
+data class NotebookCanvasUiState(
+    val isLoading: Boolean = true,
+    val page: Page? = null,
+    val strokes: List<Stroke> = emptyList(),
+    val toolMode: CanvasToolMode = CanvasToolMode.DRAW,
+    val brush: BrushSettings = BrushSettings(),
+    val zoomPercent: Int = 100,
+    val canUndo: Boolean = false,
+    val canRedo: Boolean = false,
+    val errorMessage: String? = null,
+)

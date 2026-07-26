@@ -42,4 +42,7 @@ interface NotebookDao {
 
     @Query("UPDATE notebooks SET isArchived = :archived, updatedAt = :updatedAt WHERE notebookId = :id")
     suspend fun setArchived(id: String, archived: Boolean, updatedAt: Long)
+
+    @Query("UPDATE notebooks SET pageCount = pageCount + :delta, updatedAt = :updatedAt WHERE notebookId = :id")
+    suspend fun changePageCount(id: String, delta: Int, updatedAt: Long)
 }

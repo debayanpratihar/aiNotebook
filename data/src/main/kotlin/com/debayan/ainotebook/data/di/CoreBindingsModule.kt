@@ -3,9 +3,11 @@ package com.debayan.ainotebook.data.di
 import com.debayan.ainotebook.core.dispatcher.DispatcherProvider
 import com.debayan.ainotebook.core.logging.Logger
 import com.debayan.ainotebook.core.time.TimeProvider
+import com.debayan.ainotebook.data.device.AndroidDeviceCapabilityProvider
 import com.debayan.ainotebook.data.dispatcher.DefaultDispatcherProvider
 import com.debayan.ainotebook.data.logging.AndroidLogger
 import com.debayan.ainotebook.data.time.SystemTimeProvider
+import com.debayan.ainotebook.domain.provider.DeviceCapabilityProvider
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -28,4 +30,10 @@ abstract class CoreBindingsModule {
     @Binds
     @Singleton
     abstract fun bindTimeProvider(impl: SystemTimeProvider): TimeProvider
+
+    @Binds
+    @Singleton
+    abstract fun bindDeviceCapabilityProvider(
+        impl: AndroidDeviceCapabilityProvider,
+    ): DeviceCapabilityProvider
 }

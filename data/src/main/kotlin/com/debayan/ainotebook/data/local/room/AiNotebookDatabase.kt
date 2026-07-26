@@ -7,6 +7,7 @@ import com.debayan.ainotebook.data.local.room.dao.AppMetadataDao
 import com.debayan.ainotebook.data.local.room.dao.AttachmentDao
 import com.debayan.ainotebook.data.local.room.dao.FolderDao
 import com.debayan.ainotebook.data.local.room.dao.LayerDao
+import com.debayan.ainotebook.data.local.room.dao.ModelDao
 import com.debayan.ainotebook.data.local.room.dao.NotebookDao
 import com.debayan.ainotebook.data.local.room.dao.PageDao
 import com.debayan.ainotebook.data.local.room.dao.SearchIndexDao
@@ -19,6 +20,7 @@ import com.debayan.ainotebook.data.local.room.entity.AppMetadataEntity
 import com.debayan.ainotebook.data.local.room.entity.AttachmentEntity
 import com.debayan.ainotebook.data.local.room.entity.FolderEntity
 import com.debayan.ainotebook.data.local.room.entity.LayerEntity
+import com.debayan.ainotebook.data.local.room.entity.ModelEntity
 import com.debayan.ainotebook.data.local.room.entity.NotebookEntity
 import com.debayan.ainotebook.data.local.room.entity.NotebookTagCrossRef
 import com.debayan.ainotebook.data.local.room.entity.PageEntity
@@ -50,6 +52,7 @@ import com.debayan.ainotebook.data.local.room.entity.TemplateEntity
         NotebookTagCrossRef::class,
         SearchIndexEntity::class,
         AppMetadataEntity::class,
+        ModelEntity::class,
     ],
     version = AiNotebookDatabase.VERSION,
     exportSchema = true,
@@ -68,8 +71,9 @@ abstract class AiNotebookDatabase : RoomDatabase() {
     abstract fun tagDao(): TagDao
     abstract fun searchIndexDao(): SearchIndexDao
     abstract fun appMetadataDao(): AppMetadataDao
+    abstract fun modelDao(): ModelDao
 
     companion object {
-        const val VERSION: Int = 1
+        const val VERSION: Int = 2
     }
 }

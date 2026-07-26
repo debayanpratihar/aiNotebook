@@ -10,6 +10,7 @@ import com.debayan.ainotebook.data.local.room.dao.AppMetadataDao
 import com.debayan.ainotebook.data.local.room.dao.AttachmentDao
 import com.debayan.ainotebook.data.local.room.dao.FolderDao
 import com.debayan.ainotebook.data.local.room.dao.LayerDao
+import com.debayan.ainotebook.data.local.room.dao.ModelDao
 import com.debayan.ainotebook.data.local.room.dao.NotebookDao
 import com.debayan.ainotebook.data.local.room.dao.PageDao
 import com.debayan.ainotebook.data.local.room.dao.SearchIndexDao
@@ -60,4 +61,5 @@ object DatabaseModule {
     @Provides fun provideTagDao(db: AiNotebookDatabase): TagDao = db.tagDao()
     @Provides fun provideSearchIndexDao(db: AiNotebookDatabase): SearchIndexDao = db.searchIndexDao()
     @Provides fun provideAppMetadataDao(db: AiNotebookDatabase): AppMetadataDao = db.appMetadataDao()
+    @Provides fun provideModelDao(db: AiNotebookDatabase): ModelDao = db.modelDao()
 }

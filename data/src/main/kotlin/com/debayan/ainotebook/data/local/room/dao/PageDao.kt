@@ -25,6 +25,9 @@ interface PageDao {
     @Query("SELECT * FROM pages WHERE pageId = :id")
     suspend fun getById(id: String): PageEntity?
 
+    @Query("SELECT * FROM pages WHERE notebookId = :notebookId ORDER BY pageNumber ASC LIMIT 1")
+    suspend fun getFirstPage(notebookId: String): PageEntity?
+
     @Query("SELECT COUNT(*) FROM pages WHERE notebookId = :notebookId")
     suspend fun countForNotebook(notebookId: String): Int
 

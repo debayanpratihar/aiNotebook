@@ -50,6 +50,7 @@ dependencies {
     implementation(project(":domain"))
     implementation(project(":data"))
     implementation(project(":common"))
+    implementation(project(":feature-canvas"))
 
     implementation(libs.androidx.core.ktx)
 
@@ -58,6 +59,7 @@ dependencies {
     implementation(composeBom)
     androidTestImplementation(composeBom)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.compose.foundation)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

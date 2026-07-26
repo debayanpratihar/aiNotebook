@@ -5,9 +5,16 @@ Offline-first, on-device AI handwriting notebook for Android. See the specificat
 
 ## Status
 
-**Phase 1 — Project Foundation: complete.** This is the architectural skeleton (build, modules,
-DI, navigation, database, preferences, background work, theme). Feature functionality (canvas,
-drawing, AI, OCR, export, settings UI) arrives in later phases.
+**Phase 1 — Project Foundation: complete.** Build, modules, DI, navigation, database, preferences,
+background work, theme.
+
+**Phase 2 — Canvas, drawing engine & notebook storage: complete.** Infinite world-coordinate canvas
+with pan/pinch-zoom (10%–1000%), vector stroke rendering, Catmull-Rom smoothing, pen/pencil/marker/
+highlighter + stroke eraser, transactional stroke/page/layer persistence, per-stroke autosave, and
+persistent command-based undo/redo. Create a notebook from Home and draw in it.
+
+Later phases: OCR + AI engine + model manager + settings (Phase 3); export/import, performance
+(tile renderer), security, testing (Phase 4); Play Store release (Phase 5).
 
 ## Tech stack
 
