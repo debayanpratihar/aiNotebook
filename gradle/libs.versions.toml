@@ -36,6 +36,9 @@ coil = "2.7.0"
 # Serialization
 kotlinxSerialization = "1.7.3"
 
+# On-device ML
+mlkitTextRecognition = "16.0.1"
+
 # Testing
 junit = "4.13.2"
 androidxJunit = "1.2.1"
@@ -94,6 +97,9 @@ coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 
 # Serialization
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+
+# On-device ML (OCR)
+mlkit-text-recognition = { module = "com.google.mlkit:text-recognition", version.ref = "mlkitTextRecognition" }
 
 # DI standard
 javax-inject = { module = "javax.inject:javax.inject", version.ref = "javaxInject" }

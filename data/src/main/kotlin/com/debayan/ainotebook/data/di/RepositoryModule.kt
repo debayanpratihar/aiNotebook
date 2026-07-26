@@ -7,6 +7,7 @@ import com.debayan.ainotebook.data.repository.LayerRepositoryImpl
 import com.debayan.ainotebook.data.repository.ModelRepositoryImpl
 import com.debayan.ainotebook.data.repository.NotebookRepositoryImpl
 import com.debayan.ainotebook.data.repository.PageRepositoryImpl
+import com.debayan.ainotebook.data.repository.SearchRepositoryImpl
 import com.debayan.ainotebook.data.repository.SettingsRepositoryImpl
 import com.debayan.ainotebook.data.repository.StrokeRepositoryImpl
 import com.debayan.ainotebook.domain.repository.ConfigRepository
@@ -16,6 +17,7 @@ import com.debayan.ainotebook.domain.repository.LayerRepository
 import com.debayan.ainotebook.domain.repository.ModelRepository
 import com.debayan.ainotebook.domain.repository.NotebookRepository
 import com.debayan.ainotebook.domain.repository.PageRepository
+import com.debayan.ainotebook.domain.repository.SearchRepository
 import com.debayan.ainotebook.domain.repository.SettingsRepository
 import com.debayan.ainotebook.domain.repository.StrokeRepository
 import dagger.Binds
@@ -64,4 +66,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindDownloadRepository(impl: DownloadRepositoryImpl): DownloadRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSearchRepository(impl: SearchRepositoryImpl): SearchRepository
 }

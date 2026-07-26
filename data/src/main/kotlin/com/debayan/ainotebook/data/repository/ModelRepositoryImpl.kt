@@ -14,6 +14,7 @@ import com.debayan.ainotebook.domain.repository.ModelRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 /** [ModelRepository] over Room. Activation deactivates all other models in one transaction. */
@@ -48,5 +49,9 @@ class ModelRepositoryImpl @Inject constructor(
         dispatchers.runDbCatching { modelDao.markUsed(id, timeProvider.now()) }
 
     override suspend fun deleteModel(id: String): AppResult<Unit> =
-        dispatchers.runDbCatching { modelDao.deleteById(id) }
+        dispatchers.runDbCatching {
+            // Remove the on-disk file (best effort) before dropping the registry row.
+            modelDao.getById(id)?.let { model -> runCatching { File(model.localPath).delete() } }
+            modelDao.deleteById(id)
+        }
 }
