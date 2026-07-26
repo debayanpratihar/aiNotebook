@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Host theme for the single Compose Activity. Kept minimal and framework-only (no XML layouts,
+      no extra theming dependency): NoActionBar plus transparent system bars for edge-to-edge.
+      All real colors/typography come from the Compose AiNotebookTheme.
+    -->
+    <style name="Theme.AiNotebook" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">?android:attr/colorBackground</item>
+    </style>
+</resources>
