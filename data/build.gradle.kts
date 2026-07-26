@@ -25,6 +25,21 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // On-device inference (llama.cpp) native build. Intentionally DISABLED: enabling it before
+    // vendoring llama.cpp would fail the build. See data/src/main/cpp/README.md to turn it on.
+    //
+    // defaultConfig {
+    //     ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+    // }
+    // externalNativeBuild {
+    //     cmake {
+    //         path = file("src/main/cpp/CMakeLists.txt")
+    //         version = "3.22.1"
+    //     }
+    // }
+    // ---------------------------------------------------------------------------------------------
 }
 
 kotlin {

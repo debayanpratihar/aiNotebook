@@ -51,6 +51,7 @@ dependencies {
     implementation(project(":data"))
     implementation(project(":common"))
     implementation(project(":feature-canvas"))
+    implementation(project(":feature-settings"))
 
     implementation(libs.androidx.core.ktx)
 

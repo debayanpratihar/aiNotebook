@@ -7,6 +7,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.debayan.ainotebook.feature.canvas.navigation.NotebookCanvasDestination
 import com.debayan.ainotebook.feature.canvas.navigation.notebookCanvasScreen
+import com.debayan.ainotebook.feature.settings.SettingsDestination
+import com.debayan.ainotebook.feature.settings.settingsScreen
 import com.debayan.ainotebook.home.HomeRoute
 
 /**
@@ -25,17 +27,16 @@ fun AiNotebookNavHost(
         composable(Routes.HOME) {
             HomeRoute(
                 onOpenNotebook = { id -> navController.navigate(NotebookCanvasDestination.route(id)) },
-                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onOpenSettings = { navController.navigate(SettingsDestination.ROUTE) },
             )
         }
 
         notebookCanvasScreen(onBack = { navController.popBackStack() })
 
+        settingsScreen(onBack = { navController.popBackStack() })
+
         composable(Routes.SEARCH) {
             PlaceholderScreen(title = "Search", onBack = { navController.popBackStack() })
-        }
-        composable(Routes.SETTINGS) {
-            PlaceholderScreen(title = "Settings", onBack = { navController.popBackStack() })
         }
         composable(Routes.MODEL_MANAGER) {
             PlaceholderScreen(title = "Model Manager", onBack = { navController.popBackStack() })
