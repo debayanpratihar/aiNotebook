@@ -9,6 +9,8 @@ import com.debayan.ainotebook.feature.canvas.navigation.NotebookCanvasDestinatio
 import com.debayan.ainotebook.feature.canvas.navigation.notebookCanvasScreen
 import com.debayan.ainotebook.feature.models.ModelManagerDestination
 import com.debayan.ainotebook.feature.models.modelManagerScreen
+import com.debayan.ainotebook.feature.search.SearchDestination
+import com.debayan.ainotebook.feature.search.searchScreen
 import com.debayan.ainotebook.feature.settings.SettingsDestination
 import com.debayan.ainotebook.feature.settings.settingsScreen
 import com.debayan.ainotebook.home.HomeRoute
@@ -31,6 +33,7 @@ fun AiNotebookNavHost(
                 onOpenNotebook = { id -> navController.navigate(NotebookCanvasDestination.route(id)) },
                 onOpenSettings = { navController.navigate(SettingsDestination.ROUTE) },
                 onOpenModels = { navController.navigate(ModelManagerDestination.ROUTE) },
+                onOpenSearch = { navController.navigate(SearchDestination.ROUTE) },
             )
         }
 
@@ -40,9 +43,11 @@ fun AiNotebookNavHost(
 
         modelManagerScreen(onBack = { navController.popBackStack() })
 
-        composable(Routes.SEARCH) {
-            PlaceholderScreen(title = "Search", onBack = { navController.popBackStack() })
-        }
+        searchScreen(
+            onBack = { navController.popBackStack() },
+            onOpenNotebook = { id -> navController.navigate(NotebookCanvasDestination.route(id)) },
+        )
+
         composable(Routes.EXPORT) {
             PlaceholderScreen(title = "Export", onBack = { navController.popBackStack() })
         }

@@ -40,6 +40,7 @@ fun HomeRoute(
     onOpenNotebook: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenModels: () -> Unit,
+    onOpenSearch: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val notebooks by viewModel.notebooks.collectAsStateWithLifecycle()
@@ -49,6 +50,7 @@ fun HomeRoute(
         onOpenNotebook = onOpenNotebook,
         onOpenSettings = onOpenSettings,
         onOpenModels = onOpenModels,
+        onOpenSearch = onOpenSearch,
     )
 }
 
@@ -60,12 +62,19 @@ fun HomeScreen(
     onOpenNotebook: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onOpenModels: () -> Unit,
+    onOpenSearch: () -> Unit,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("AI Notebook") },
-                actions = { HomeOverflowMenu(onOpenModels = onOpenModels, onOpenSettings = onOpenSettings) },
+                actions = {
+                    HomeOverflowMenu(
+                        onOpenSearch = onOpenSearch,
+                        onOpenModels = onOpenModels,
+                        onOpenSettings = onOpenSettings,
+                    )
+                },
             )
         },
         floatingActionButton = {
@@ -100,12 +109,23 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeOverflowMenu(onOpenModels: () -> Unit, onOpenSettings: () -> Unit) {
+private fun HomeOverflowMenu(
+    onOpenSearch: () -> Unit,
+    onOpenModels: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
     var expanded by remember { mutableStateOf(false) }
     IconButton(onClick = { expanded = true }) {
         Icon(Icons.Filled.MoreVert, contentDescription = "More")
     }
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenuItem(
+            text = { Text("Search") },
+            onClick = {
+                expanded = false
+                onOpenSearch()
+            },
+        )
         DropdownMenuItem(
             text = { Text("Model Manager") },
             onClick = {

@@ -5,11 +5,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.debayan.ainotebook.core.result.AppResult
 import com.debayan.ainotebook.core.time.TimeProvider
+import com.debayan.ainotebook.domain.model.ai.AiGenerationRequest
+import com.debayan.ainotebook.domain.model.ai.AiGenerationState
 import com.debayan.ainotebook.domain.model.canvas.BoundingBox
 import com.debayan.ainotebook.domain.model.canvas.Stroke
 import com.debayan.ainotebook.domain.model.canvas.StrokePoint
 import com.debayan.ainotebook.domain.model.canvas.ToolType
+import com.debayan.ainotebook.domain.repository.SettingsRepository
+import com.debayan.ainotebook.domain.usecase.ai.GenerateAiResponseUseCase
 import com.debayan.ainotebook.domain.usecase.notebook.OpenNotebookUseCase
+import com.debayan.ainotebook.domain.usecase.ocr.RequestPageOcrUseCase
 import com.debayan.ainotebook.domain.usecase.stroke.DeleteStrokeUseCase
 import com.debayan.ainotebook.domain.usecase.stroke.ObservePageStrokesUseCase
 import com.debayan.ainotebook.domain.usecase.stroke.SaveStrokeUseCase
@@ -21,6 +26,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -39,6 +45,9 @@ class NotebookCanvasViewModel @Inject constructor(
     private val observePageStrokes: ObservePageStrokesUseCase,
     private val saveStroke: SaveStrokeUseCase,
     private val deleteStroke: DeleteStrokeUseCase,
+    private val generateAiResponse: GenerateAiResponseUseCase,
+    private val requestPageOcr: RequestPageOcrUseCase,
+    private val settingsRepository: SettingsRepository,
     private val timeProvider: TimeProvider,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -51,7 +60,9 @@ class NotebookCanvasViewModel @Inject constructor(
     val uiState: StateFlow<NotebookCanvasUiState> = _uiState.asStateFlow()
 
     private var activeLayerId: String? = null
+    private var pageId: String? = null
     private var strokesJob: Job? = null
+    private var aiJob: Job? = null
 
     private val undoStack = ArrayDeque<CanvasCommand>()
     private val redoStack = ArrayDeque<CanvasCommand>()
@@ -68,6 +79,7 @@ class NotebookCanvasViewModel @Inject constructor(
             when (val result = openNotebook(notebookId)) {
                 is AppResult.Success -> {
                     activeLayerId = result.data.activeLayerId
+                    pageId = result.data.page.id
                     _uiState.update { it.copy(isLoading = false, page = result.data.page) }
                     observeStrokes(result.data.page.id)
                 }
@@ -109,6 +121,7 @@ class NotebookCanvasViewModel @Inject constructor(
                     undoStack.addLast(CanvasCommand.AddStroke(stroke))
                     redoStack.clear()
                     refreshHistory()
+                    requestOcr()
                 }
 
                 is AppResult.Failure ->
@@ -127,6 +140,7 @@ class NotebookCanvasViewModel @Inject constructor(
                     undoStack.addLast(CanvasCommand.RemoveStroke(hit))
                     redoStack.clear()
                     refreshHistory()
+                    requestOcr()
                 }
 
                 is AppResult.Failure -> {
@@ -144,7 +158,12 @@ class NotebookCanvasViewModel @Inject constructor(
                 is CanvasCommand.AddStroke -> deleteStroke(command.stroke.id) is AppResult.Success
                 is CanvasCommand.RemoveStroke -> saveStroke(command.stroke) is AppResult.Success
             }
-            if (applied) redoStack.addLast(command) else undoStack.addLast(command)
+            if (applied) {
+                redoStack.addLast(command)
+                requestOcr()
+            } else {
+                undoStack.addLast(command)
+            }
             refreshHistory()
         }
     }
@@ -156,8 +175,24 @@ class NotebookCanvasViewModel @Inject constructor(
                 is CanvasCommand.AddStroke -> saveStroke(command.stroke) is AppResult.Success
                 is CanvasCommand.RemoveStroke -> deleteStroke(command.stroke.id) is AppResult.Success
             }
-            if (applied) undoStack.addLast(command) else redoStack.addLast(command)
+            if (applied) {
+                undoStack.addLast(command)
+                requestOcr()
+            } else {
+                redoStack.addLast(command)
+            }
             refreshHistory()
+        }
+    }
+
+    /** Schedules background OCR indexing for the current page when enabled in settings. */
+    private fun requestOcr() {
+        val page = pageId ?: return
+        viewModelScope.launch {
+            val prefs = settingsRepository.userPreferences.first()
+            if (prefs.ocrEnabled && prefs.automaticIndexing) {
+                requestPageOcr(RequestPageOcrUseCase.Params(notebookId = notebookId, pageId = page))
+            }
         }
     }
 
@@ -168,6 +203,27 @@ class NotebookCanvasViewModel @Inject constructor(
 
     fun onZoomChanged(scale: Float) =
         _uiState.update { it.copy(zoomPercent = (scale * 100f).toInt()) }
+
+    fun toggleAiPanel() = _uiState.update { it.copy(aiPanelVisible = !it.aiPanelVisible) }
+
+    /** Runs an AI generation, streaming state into [NotebookCanvasUiState.aiState]. */
+    fun generateAi(instruction: String) {
+        aiJob?.cancel()
+        val request = AiGenerationRequest(userInstruction = instruction, contextText = "")
+        aiJob = generateAiResponse(request)
+            .onEach { state -> _uiState.update { it.copy(aiState = state) } }
+            .launchIn(viewModelScope)
+    }
+
+    /** Stops generation, keeping any text produced so far. */
+    fun stopAi() {
+        aiJob?.cancel()
+        aiJob = null
+        _uiState.update { current ->
+            val partial = (current.aiState as? AiGenerationState.Writing)?.text
+            current.copy(aiState = partial?.let { AiGenerationState.Completed(it) } ?: AiGenerationState.Idle)
+        }
+    }
 
     fun consumeError() = _uiState.update { it.copy(errorMessage = null) }
 
@@ -183,6 +239,7 @@ class NotebookCanvasViewModel @Inject constructor(
 
     override fun onCleared() {
         strokesJob?.cancel()
+        aiJob?.cancel()
         super.onCleared()
     }
 

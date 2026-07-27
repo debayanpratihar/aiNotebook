@@ -53,6 +53,7 @@ dependencies {
     implementation(project(":feature-canvas"))
     implementation(project(":feature-settings"))
     implementation(project(":feature-models"))
+    implementation(project(":feature-search"))
 
     implementation(libs.androidx.core.ktx)
 

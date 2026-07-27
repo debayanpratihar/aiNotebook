@@ -1,5 +1,6 @@
 package com.debayan.ainotebook.feature.canvas.presentation
 
+import com.debayan.ainotebook.domain.model.ai.AiGenerationState
 import com.debayan.ainotebook.domain.model.canvas.Page
 import com.debayan.ainotebook.domain.model.canvas.Stroke
 import com.debayan.ainotebook.feature.canvas.engine.BrushSettings
@@ -15,5 +16,7 @@ data class NotebookCanvasUiState(
     val zoomPercent: Int = 100,
     val canUndo: Boolean = false,
     val canRedo: Boolean = false,
+    val aiPanelVisible: Boolean = false,
+    val aiState: AiGenerationState = AiGenerationState.Idle,
     val errorMessage: String? = null,
 )

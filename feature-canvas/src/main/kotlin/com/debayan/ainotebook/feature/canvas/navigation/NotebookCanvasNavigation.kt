@@ -38,6 +38,9 @@ fun NavGraphBuilder.notebookCanvasScreen(onBack: () -> Unit) {
             onStrokeCompleted = viewModel::onStrokeCompleted,
             onEraseAt = viewModel::onEraseAt,
             onZoomChanged = viewModel::onZoomChanged,
+            onToggleAiPanel = viewModel::toggleAiPanel,
+            onGenerateAi = viewModel::generateAi,
+            onStopAi = viewModel::stopAi,
         )
     }
 }
