@@ -6,6 +6,11 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// The on-device inference (llama.cpp) native build turns on automatically once llama.cpp is vendored
+// at data/src/main/cpp/llama.cpp. Until then the app builds normally with AI gracefully unavailable.
+val llamaNativeDir = file("src/main/cpp/llama.cpp")
+val llamaNativeEnabled = llamaNativeDir.exists()
+
 android {
     namespace = "com.debayan.ainotebook.data"
     compileSdk = 35
@@ -13,6 +18,10 @@ android {
     defaultConfig {
         minSdk = 26
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        if (llamaNativeEnabled) {
+            ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+        }
     }
 
     buildTypes {
@@ -29,20 +38,16 @@ android {
     // Make exported Room schemas available to instrumented migration tests.
     sourceSets.getByName("androidTest").assets.srcDir(files("$projectDir/schemas"))
 
-    // ---------------------------------------------------------------------------------------------
-    // On-device inference (llama.cpp) native build. Intentionally DISABLED: enabling it before
-    // vendoring llama.cpp would fail the build. See data/src/main/cpp/README.md to turn it on.
-    //
-    // defaultConfig {
-    //     ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
-    // }
-    // externalNativeBuild {
-    //     cmake {
-    //         path = file("src/main/cpp/CMakeLists.txt")
-    //         version = "3.22.1"
-    //     }
-    // }
-    // ---------------------------------------------------------------------------------------------
+    // On-device inference (llama.cpp) native build — enabled only when llama.cpp is vendored.
+    // See data/src/main/cpp/README.md for the one-time vendoring + NDK setup steps.
+    if (llamaNativeEnabled) {
+        externalNativeBuild {
+            cmake {
+                path = file("src/main/cpp/CMakeLists.txt")
+                version = "3.22.1"
+            }
+        }
+    }
 }
 
 kotlin {

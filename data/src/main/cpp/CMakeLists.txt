@@ -1,11 +1,7 @@
 # Native build for the on-device inference library (libainotebook_llama.so).
 #
-# NOT wired into Gradle by default — enabling externalNativeBuild before vendoring llama.cpp would
-# fail the build. To enable:
-#   1. Vendor llama.cpp into data/src/main/cpp/llama.cpp (e.g. a git submodule).
-#   2. Uncomment add_subdirectory(llama.cpp) and the `llama` link line below.
-#   3. Uncomment the externalNativeBuild / ndk blocks in data/build.gradle.kts.
-# See README.md in this directory.
+# This is invoked by Gradle ONLY when data/src/main/cpp/llama.cpp exists (the build.gradle.kts gates
+# externalNativeBuild on that directory). Vendor llama.cpp there (git submodule) to enable it.
 
 cmake_minimum_required(VERSION 3.22.1)
 project("ainotebook_llama")
@@ -13,13 +9,20 @@ project("ainotebook_llama")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Build llama.cpp for the target ABI (CPU; GPU/Vulkan can be enabled per llama.cpp docs).
-# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp)
+# llama.cpp build options tuned for a lean Android library build.
+set(GGML_LLAMAFILE      OFF CACHE BOOL "" FORCE)
+set(GGML_OPENMP         OFF CACHE BOOL "" FORCE)
+set(LLAMA_CURL          OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_TESTS   OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_TOOLS   OFF CACHE BOOL "" FORCE)
+set(LLAMA_BUILD_SERVER  OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp)
 
 add_library(ainotebook_llama SHARED ainotebook_llama.cpp)
 
 find_library(log-lib log)
 
-target_link_libraries(ainotebook_llama
-    # llama          # provided by add_subdirectory(llama.cpp)
-    ${log-lib})
+# Linking `llama` propagates its public include dirs, so `#include "llama.h"` resolves.
+target_link_libraries(ainotebook_llama llama ${log-lib})
