@@ -51,9 +51,11 @@ class ModelDownloader @Inject constructor(
             }
             val body = response.body ?: throw IOException("Empty download body")
             val reportedLength = body.contentLength()
+            // Prefer the server's actual content length for progress; the config's declared size is
+            // only an estimate and would otherwise push progress past 100%.
             val total = when {
-                expectedBytes > 0 -> expectedBytes
                 reportedLength >= 0 -> existing + reportedLength
+                expectedBytes > 0 -> expectedBytes
                 else -> -1L
             }
 
@@ -69,7 +71,7 @@ class ModelDownloader @Inject constructor(
                         output.write(buffer, 0, read)
                         downloaded += read
                         if (total > 0) {
-                            val percent = ((downloaded * 100) / total).toInt()
+                            val percent = ((downloaded * 100) / total).toInt().coerceIn(0, 100)
                             if (percent != lastPercent) {
                                 lastPercent = percent
                                 onProgress(downloaded, total)

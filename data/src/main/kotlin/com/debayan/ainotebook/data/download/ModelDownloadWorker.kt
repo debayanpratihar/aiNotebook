@@ -51,7 +51,7 @@ class ModelDownloadWorker @AssistedInject constructor(
             setProgress(progressData(ModelDownloadState.DOWNLOADING, 0, 0L, declaredSize))
 
             val file = downloader.download(url, destination, declaredSize) { downloaded, total ->
-                val percent = if (total > 0) ((downloaded * 100) / total).toInt() else 0
+                val percent = if (total > 0) ((downloaded * 100) / total).toInt().coerceIn(0, 100) else 0
                 setProgress(progressData(ModelDownloadState.DOWNLOADING, percent, downloaded, total))
                 notifications.notify(
                     modelId,

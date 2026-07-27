@@ -15,6 +15,9 @@ interface SearchRepository {
 
     fun search(query: String): Flow<List<SearchResult>>
 
+    /** The most recent recognized text for a page (empty if not yet indexed), for AI context. */
+    suspend fun getPageText(pageId: String): String
+
     suspend fun clearPageIndex(pageId: String): AppResult<Unit>
 
     suspend fun clearNotebookIndex(notebookId: String): AppResult<Unit>

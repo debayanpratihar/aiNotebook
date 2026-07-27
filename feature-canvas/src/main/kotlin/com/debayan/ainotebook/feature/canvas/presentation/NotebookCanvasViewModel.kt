@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.debayan.ainotebook.core.result.AppResult
+import com.debayan.ainotebook.core.result.getOrDefault
 import com.debayan.ainotebook.core.time.TimeProvider
 import com.debayan.ainotebook.domain.model.ai.AiGenerationRequest
 import com.debayan.ainotebook.domain.model.ai.AiGenerationState
@@ -13,6 +14,7 @@ import com.debayan.ainotebook.domain.model.canvas.StrokePoint
 import com.debayan.ainotebook.domain.model.canvas.ToolType
 import com.debayan.ainotebook.domain.repository.SettingsRepository
 import com.debayan.ainotebook.domain.usecase.ai.GenerateAiResponseUseCase
+import com.debayan.ainotebook.domain.usecase.ai.GetPageContextUseCase
 import com.debayan.ainotebook.domain.usecase.notebook.ObserveNotebookUseCase
 import com.debayan.ainotebook.domain.usecase.notebook.OpenNotebookUseCase
 import com.debayan.ainotebook.domain.usecase.notebook.RenameNotebookUseCase
@@ -25,9 +27,11 @@ import com.debayan.ainotebook.feature.canvas.engine.CanvasToolMode
 import com.debayan.ainotebook.feature.canvas.navigation.NotebookCanvasDestination
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -48,6 +52,7 @@ class NotebookCanvasViewModel @Inject constructor(
     private val saveStroke: SaveStrokeUseCase,
     private val deleteStroke: DeleteStrokeUseCase,
     private val generateAiResponse: GenerateAiResponseUseCase,
+    private val getPageContext: GetPageContextUseCase,
     private val requestPageOcr: RequestPageOcrUseCase,
     private val observeNotebook: ObserveNotebookUseCase,
     private val renameNotebookUseCase: RenameNotebookUseCase,
@@ -67,6 +72,11 @@ class NotebookCanvasViewModel @Inject constructor(
     private var pageId: String? = null
     private var strokesJob: Job? = null
     private var aiJob: Job? = null
+    private var autoAiJob: Job? = null
+
+    private var aiEnabledPref = true
+    private var autoAiEnabled = false
+    private var inactivityMs = 3_000L
 
     private val undoStack = ArrayDeque<CanvasCommand>()
     private val redoStack = ArrayDeque<CanvasCommand>()
@@ -81,6 +91,17 @@ class NotebookCanvasViewModel @Inject constructor(
     init {
         loadNotebook()
         observeNotebookTitle()
+        observeAiSettings()
+    }
+
+    private fun observeAiSettings() {
+        settingsRepository.userPreferences
+            .onEach { prefs ->
+                aiEnabledPref = prefs.aiEnabled
+                autoAiEnabled = prefs.automaticAiGeneration
+                inactivityMs = prefs.aiInactivityTimeoutSeconds.coerceAtLeast(1) * 1000L
+            }
+            .launchIn(viewModelScope)
     }
 
     private fun observeNotebookTitle() {
@@ -145,6 +166,7 @@ class NotebookCanvasViewModel @Inject constructor(
                     redoStack.clear()
                     refreshHistory()
                     requestOcr()
+                    scheduleAutoAi()
                 }
 
                 is AppResult.Failure ->
@@ -252,13 +274,28 @@ class NotebookCanvasViewModel @Inject constructor(
 
     fun toggleAiPanel() = _uiState.update { it.copy(aiPanelVisible = !it.aiPanelVisible) }
 
-    /** Runs an AI generation, streaming state into [NotebookCanvasUiState.aiState]. */
+    /**
+     * Runs an AI generation using the page's recognized handwriting as context, streaming state into
+     * [NotebookCanvasUiState.aiState]. Cancel via [stopAi] to interrupt.
+     */
     fun generateAi(instruction: String) {
         aiJob?.cancel()
-        val request = AiGenerationRequest(userInstruction = instruction, contextText = "")
-        aiJob = generateAiResponse(request)
-            .onEach { state -> _uiState.update { it.copy(aiState = state) } }
-            .launchIn(viewModelScope)
+        aiJob = viewModelScope.launch {
+            val context = pageId?.let { getPageContext(it).getOrDefault("") }.orEmpty()
+            generateAiResponse(AiGenerationRequest(userInstruction = instruction, contextText = context))
+                .collect { state -> _uiState.update { it.copy(aiState = state) } }
+        }
+    }
+
+    /** After the user pauses (per settings), auto-generates from the handwriting — real-time assist. */
+    private fun scheduleAutoAi() {
+        if (!aiEnabledPref || !autoAiEnabled) return
+        autoAiJob?.cancel()
+        autoAiJob = viewModelScope.launch {
+            delay(inactivityMs)
+            _uiState.update { it.copy(aiPanelVisible = true) }
+            generateAi("")
+        }
     }
 
     /** Stops generation, keeping any text produced so far. */
@@ -286,6 +323,7 @@ class NotebookCanvasViewModel @Inject constructor(
     override fun onCleared() {
         strokesJob?.cancel()
         aiJob?.cancel()
+        autoAiJob?.cancel()
         super.onCleared()
     }
 

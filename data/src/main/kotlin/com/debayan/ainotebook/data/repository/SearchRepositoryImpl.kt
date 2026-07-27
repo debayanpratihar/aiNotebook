@@ -10,6 +10,7 @@ import com.debayan.ainotebook.domain.model.search.SearchResult
 import com.debayan.ainotebook.domain.repository.SearchRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
@@ -42,6 +43,9 @@ class SearchRepositoryImpl @Inject constructor(
         searchIndexDao.search(query).map { rows ->
             rows.map { SearchResult(it.notebookId, it.pageId, it.recognizedText) }
         }
+
+    override suspend fun getPageText(pageId: String): String =
+        withContext(dispatchers.io) { searchIndexDao.getTextForPage(pageId).orEmpty() }
 
     override suspend fun clearPageIndex(pageId: String): AppResult<Unit> =
         dispatchers.runDbCatching { searchIndexDao.deleteByPage(pageId) }

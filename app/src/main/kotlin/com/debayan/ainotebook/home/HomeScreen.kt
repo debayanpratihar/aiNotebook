@@ -97,7 +97,7 @@ fun HomeRoute(
     HomeScreen(
         notebooks = notebooks,
         snackbarHostState = snackbarHostState,
-        onCreateNotebook = { viewModel.createNotebook(onOpenNotebook) },
+        onCreateNotebook = { name -> viewModel.createNotebook(name, onOpenNotebook) },
         onOpenNotebook = onOpenNotebook,
         onRenameNotebook = viewModel::renameNotebook,
         onDeleteNotebook = viewModel::deleteNotebook,
@@ -113,7 +113,7 @@ fun HomeRoute(
 fun HomeScreen(
     notebooks: List<Notebook>,
     snackbarHostState: SnackbarHostState,
-    onCreateNotebook: () -> Unit,
+    onCreateNotebook: (String) -> Unit,
     onOpenNotebook: (String) -> Unit,
     onRenameNotebook: (String, String) -> Unit,
     onDeleteNotebook: (String) -> Unit,
@@ -124,6 +124,7 @@ fun HomeScreen(
 ) {
     var renameTarget by remember { mutableStateOf<Notebook?>(null) }
     var deleteTarget by remember { mutableStateOf<Notebook?>(null) }
+    var showCreateDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -142,7 +143,7 @@ fun HomeScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = onCreateNotebook,
+                onClick = { showCreateDialog = true },
                 icon = { Icon(Icons.Filled.Add, contentDescription = null) },
                 text = { Text("New notebook") },
             )
@@ -175,8 +176,23 @@ fun HomeScreen(
         }
     }
 
+    if (showCreateDialog) {
+        NotebookNameDialog(
+            dialogTitle = "New notebook",
+            confirmLabel = "Create",
+            initialTitle = "",
+            onConfirm = { name ->
+                onCreateNotebook(name)
+                showCreateDialog = false
+            },
+            onDismiss = { showCreateDialog = false },
+        )
+    }
+
     renameTarget?.let { target ->
-        RenameDialog(
+        NotebookNameDialog(
+            dialogTitle = "Rename notebook",
+            confirmLabel = "Save",
             initialTitle = target.title,
             onConfirm = { newTitle ->
                 onRenameNotebook(target.id, newTitle)
@@ -260,7 +276,9 @@ private fun NotebookCardMenu(onRename: () -> Unit, onDelete: () -> Unit) {
 }
 
 @Composable
-private fun RenameDialog(
+private fun NotebookNameDialog(
+    dialogTitle: String,
+    confirmLabel: String,
     initialTitle: String,
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
@@ -268,7 +286,7 @@ private fun RenameDialog(
     var text by remember { mutableStateOf(initialTitle) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename notebook") },
+        title = { Text(dialogTitle) },
         text = {
             OutlinedTextField(
                 value = text,
@@ -277,7 +295,11 @@ private fun RenameDialog(
                 label = { Text("Title") },
             )
         },
-        confirmButton = { TextButton(onClick = { onConfirm(text) }) { Text("Save") } },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text.trim()) }, enabled = text.isNotBlank()) {
+                Text(confirmLabel)
+            }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

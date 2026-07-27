@@ -78,8 +78,8 @@ fun ModelManagerScreen(
                 }
 
                 if (state.installed.isNotEmpty()) {
-                    item { SectionHeader("Installed") }
-                    items(state.installed, key = { it.id }) { model ->
+                    item(key = "header_installed") { SectionHeader("Installed") }
+                    items(state.installed, key = { "installed_${it.id}" }) { model ->
                         InstalledModelCard(
                             model = model,
                             isActive = model.id == state.activeModelId,
@@ -89,8 +89,8 @@ fun ModelManagerScreen(
                     }
                 }
 
-                item { SectionHeader("Available") }
-                items(state.available, key = { it.model.id }) { ui ->
+                item(key = "header_available") { SectionHeader("Available") }
+                items(state.available, key = { "available_${it.model.id}" }) { ui ->
                     AvailableModelCard(
                         ui = ui,
                         onDownload = { onDownload(ui.model) },
@@ -220,7 +220,7 @@ private fun AvailableModelCard(
                             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                         } else {
                             LinearProgressIndicator(
-                                progress = { download.percent / 100f },
+                                progress = { (download.percent / 100f).coerceIn(0f, 1f) },
                                 modifier = Modifier.fillMaxWidth(),
                             )
                         }

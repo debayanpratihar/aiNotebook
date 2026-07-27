@@ -33,10 +33,10 @@ class HomeViewModel @Inject constructor(
     private val _importError = MutableStateFlow<String?>(null)
     val importError: StateFlow<String?> = _importError.asStateFlow()
 
-    /** Creates a new notebook (with a first page/layer) and invokes [onCreated] with its id. */
-    fun createNotebook(onCreated: (String) -> Unit) {
+    /** Creates a new notebook with [title] (with a first page/layer) and invokes [onCreated]. */
+    fun createNotebook(title: String, onCreated: (String) -> Unit) {
         viewModelScope.launch {
-            val result = createNotebookUseCase(CreateNotebookUseCase.Params(title = "Untitled Notebook"))
+            val result = createNotebookUseCase(CreateNotebookUseCase.Params(title = title))
             if (result is AppResult.Success) onCreated(result.data)
         }
     }
