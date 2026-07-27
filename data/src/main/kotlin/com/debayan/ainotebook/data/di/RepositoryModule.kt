@@ -2,7 +2,9 @@ package com.debayan.ainotebook.data.di
 
 import com.debayan.ainotebook.data.repository.ConfigRepositoryImpl
 import com.debayan.ainotebook.data.repository.DownloadRepositoryImpl
+import com.debayan.ainotebook.data.repository.ExportRepositoryImpl
 import com.debayan.ainotebook.data.repository.FolderRepositoryImpl
+import com.debayan.ainotebook.data.repository.ImportRepositoryImpl
 import com.debayan.ainotebook.data.repository.LayerRepositoryImpl
 import com.debayan.ainotebook.data.repository.ModelRepositoryImpl
 import com.debayan.ainotebook.data.repository.NotebookRepositoryImpl
@@ -13,7 +15,9 @@ import com.debayan.ainotebook.data.repository.SettingsRepositoryImpl
 import com.debayan.ainotebook.data.repository.StrokeRepositoryImpl
 import com.debayan.ainotebook.domain.repository.ConfigRepository
 import com.debayan.ainotebook.domain.repository.DownloadRepository
+import com.debayan.ainotebook.domain.repository.ExportRepository
 import com.debayan.ainotebook.domain.repository.FolderRepository
+import com.debayan.ainotebook.domain.repository.ImportRepository
 import com.debayan.ainotebook.domain.repository.LayerRepository
 import com.debayan.ainotebook.domain.repository.ModelRepository
 import com.debayan.ainotebook.domain.repository.NotebookRepository
@@ -76,4 +80,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindOcrRepository(impl: OcrRepositoryImpl): OcrRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindExportRepository(impl: ExportRepositoryImpl): ExportRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindImportRepository(impl: ImportRepositoryImpl): ImportRepository
 }

@@ -18,9 +18,11 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
+import com.debayan.ainotebook.domain.model.canvas.BoundingBox
 import com.debayan.ainotebook.domain.model.canvas.Stroke
 import com.debayan.ainotebook.domain.model.canvas.StrokePoint
 import com.debayan.ainotebook.feature.canvas.engine.BrushSettings
@@ -44,8 +46,9 @@ private const val MIN_WORLD_DISTANCE_SQ = MIN_WORLD_DISTANCE * MIN_WORLD_DISTANC
  * pointer lands mid-stroke the in-progress stroke is discarded and the gesture becomes a transform,
  * so pinching never leaves a stray mark.
  *
- * Note: this is a straightforward full-viewport vector redraw. Tile-based dirty rendering is the
- * Phase 4 performance optimization.
+ * Rendering is optimized with viewport culling (only strokes intersecting the visible world region
+ * are drawn) and a persistent per-stroke path cache (each stroke is converted to a vector path once).
+ * Full tile-based dirty-region rendering is a further optimization tracked for large notebooks.
  */
 @Composable
 fun InfiniteCanvas(
@@ -67,10 +70,9 @@ fun InfiniteCanvas(
     val currentOnEraseAt by rememberUpdatedState(onEraseAt)
     val currentOnZoomChanged by rememberUpdatedState(onZoomChanged)
 
-    // Pre-build smoothed world paths for committed strokes; recompute only when they change.
-    val committedPaths = remember(strokes, brush.smoothing) {
-        strokes.associate { it.id to StrokeSmoothing.buildPath(it.points, brush.smoothing) }
-    }
+    // Persistent per-stroke path cache. Keyed on smoothing so changing it rebuilds lazily; only
+    // newly seen strokes are converted to paths, avoiding an O(N) rebuild on every edit.
+    val pathCache = remember(brush.smoothing) { mutableMapOf<String, Path>() }
 
     Canvas(
         modifier = modifier
@@ -131,12 +133,27 @@ fun InfiniteCanvas(
     ) {
         drawTemplate(template, camera, TEMPLATE_SPACING, templateColor)
 
+        // Visible world region, used to cull off-screen strokes.
+        val topLeftWorld = camera.screenToWorld(Offset.Zero)
+        val bottomRightWorld = camera.screenToWorld(Offset(size.width, size.height))
+        val visibleWorld = BoundingBox(
+            left = topLeftWorld.x,
+            top = topLeftWorld.y,
+            right = bottomRightWorld.x,
+            bottom = bottomRightWorld.y,
+        )
+
         withTransform({
             translate(camera.offset.x, camera.offset.y)
             scale(camera.scale, camera.scale, pivot = Offset.Zero)
         }) {
             strokes.forEach { stroke ->
-                committedPaths[stroke.id]?.let { path -> drawStroke(stroke, path) }
+                if (stroke.boundingBox.intersects(visibleWorld)) {
+                    val path = pathCache.getOrPut(stroke.id) {
+                        StrokeSmoothing.buildPath(stroke.points, brush.smoothing)
+                    }
+                    drawStroke(stroke, path)
+                }
             }
             if (activePoints.isNotEmpty()) {
                 val activePath = StrokeSmoothing.buildPath(activePoints, brush.smoothing)
