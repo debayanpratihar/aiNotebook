@@ -16,7 +16,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.debayan.ainotebook.HiltTestRunner"
     }
 
     buildTypes {
@@ -54,6 +54,7 @@ dependencies {
     implementation(project(":feature-settings"))
     implementation(project(":feature-models"))
     implementation(project(":feature-search"))
+    implementation(project(":feature-export"))
 
     implementation(libs.androidx.core.ktx)
 
@@ -87,6 +88,7 @@ dependencies {
     testImplementation(libs.turbine)
 
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.hilt.android.testing)

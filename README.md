@@ -9,12 +9,26 @@ Offline-first, on-device AI handwriting notebook for Android. See the specificat
 background work, theme.
 
 **Phase 2 — Canvas, drawing engine & notebook storage: complete.** Infinite world-coordinate canvas
-with pan/pinch-zoom (10%–1000%), vector stroke rendering, Catmull-Rom smoothing, pen/pencil/marker/
-highlighter + stroke eraser, transactional stroke/page/layer persistence, per-stroke autosave, and
-persistent command-based undo/redo. Create a notebook from Home and draw in it.
+with pan/pinch-zoom (10%–1000%), vector stroke rendering (viewport-culled + path-cached),
+Catmull-Rom smoothing, pen/pencil/marker/highlighter + stroke eraser, transactional stroke/page/layer
+persistence, per-stroke autosave, and persistent command-based undo/redo.
 
-Later phases: OCR + AI engine + model manager + settings (Phase 3); export/import, performance
-(tile renderer), security, testing (Phase 4); Play Store release (Phase 5).
+**Phase 3 — OCR, AI engine, model manager & settings: complete.** Remote config + model catalog,
+device-compatibility recommendation, resumable/verified model downloads (WorkManager), on-device OCR
+(ML Kit) → search index, the AI engine architecture with streaming generation + prompt building
+(native llama.cpp behind a graceful-degradation boundary — see `data/src/main/cpp/README.md`),
+DataStore-backed settings, and Model Manager / Settings / Search / AI-panel UI.
+
+**Phase 4 — export/import, performance, security & testing: complete.** Lossless native `.ainb`
+package (validated, id-remapped import), PDF + PNG/JPEG export with share-sheet, canvas viewport
+culling + path caching, and a test suite (unit tests, Room v1→v2 migration test, Hilt test runner).
+
+Remaining: Play Store release preparation (Phase 5).
+
+## Two documented follow-ups (require a device/native build)
+1. **Native inference** — vendor llama.cpp + NDK build to enable on-device generation.
+2. **AI → handwriting strokes** — render AI text as editable vector strokes on the canvas
+   (currently shown in the AI panel).
 
 ## Tech stack
 

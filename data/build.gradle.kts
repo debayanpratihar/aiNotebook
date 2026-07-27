@@ -26,6 +26,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // Make exported Room schemas available to instrumented migration tests.
+    sourceSets.getByName("androidTest").assets.srcDir(files("$projectDir/schemas"))
+
     // ---------------------------------------------------------------------------------------------
     // On-device inference (llama.cpp) native build. Intentionally DISABLED: enabling it before
     // vendoring llama.cpp would fail the build. See data/src/main/cpp/README.md to turn it on.
@@ -91,4 +94,5 @@ dependencies {
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.work.testing)
+    androidTestImplementation(libs.room.testing)
 }

@@ -19,13 +19,17 @@ object NotebookCanvasDestination {
 }
 
 /** Registers the notebook canvas destination in a [NavGraphBuilder]. */
-fun NavGraphBuilder.notebookCanvasScreen(onBack: () -> Unit) {
+fun NavGraphBuilder.notebookCanvasScreen(
+    onBack: () -> Unit,
+    onExport: (String) -> Unit,
+) {
     composable(
         route = NotebookCanvasDestination.ROUTE,
         arguments = listOf(
             navArgument(NotebookCanvasDestination.ARG_NOTEBOOK_ID) { type = NavType.StringType },
         ),
-    ) {
+    ) { backStackEntry ->
+        val notebookId = backStackEntry.arguments?.getString(NotebookCanvasDestination.ARG_NOTEBOOK_ID).orEmpty()
         val viewModel: NotebookCanvasViewModel = hiltViewModel()
         val state by viewModel.uiState.collectAsStateWithLifecycle()
         NotebookCanvasScreen(
@@ -41,6 +45,7 @@ fun NavGraphBuilder.notebookCanvasScreen(onBack: () -> Unit) {
             onToggleAiPanel = viewModel::toggleAiPanel,
             onGenerateAi = viewModel::generateAi,
             onStopAi = viewModel::stopAi,
+            onExport = { onExport(notebookId) },
         )
     }
 }

@@ -60,6 +60,7 @@ fun NotebookCanvasScreen(
     onToggleAiPanel: () -> Unit,
     onGenerateAi: (String) -> Unit,
     onStopAi: () -> Unit,
+    onExport: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -78,6 +79,7 @@ fun NotebookCanvasScreen(
                     )
                     TextButton(onClick = onUndo, enabled = state.canUndo) { Text("Undo") }
                     TextButton(onClick = onRedo, enabled = state.canRedo) { Text("Redo") }
+                    TextButton(onClick = onExport) { Text("Export") }
                 },
             )
         },
