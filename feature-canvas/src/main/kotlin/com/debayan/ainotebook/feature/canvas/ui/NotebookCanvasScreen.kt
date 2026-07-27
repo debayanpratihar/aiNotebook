@@ -138,6 +138,8 @@ fun NotebookCanvasScreen(
                     onStrokeCompleted = onStrokeCompleted,
                     onEraseAt = onEraseAt,
                     onZoomChanged = onZoomChanged,
+                    answerOverlay = state.answerOverlay,
+                    answerColor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

@@ -19,5 +19,6 @@ data class NotebookCanvasUiState(
     val canRedo: Boolean = false,
     val aiPanelVisible: Boolean = false,
     val aiState: AiGenerationState = AiGenerationState.Idle,
+    val answerOverlay: AnswerOverlay? = null,
     val errorMessage: String? = null,
 )

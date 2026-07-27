@@ -1,0 +1,8 @@
+{
+  "configVersion": 2,
+  "maintenance": false,
+  "minimumAppVersion": 0,
+  "latestAppVersion": "1.0.0",
+  "defaultModel": "compact",
+  "wifiOnlyDefault": true
+}

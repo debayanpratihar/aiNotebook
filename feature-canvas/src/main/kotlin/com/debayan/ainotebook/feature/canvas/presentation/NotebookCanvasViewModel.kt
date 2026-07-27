@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.debayan.ainotebook.core.result.AppResult
 import com.debayan.ainotebook.core.result.getOrDefault
 import com.debayan.ainotebook.core.time.TimeProvider
+import com.debayan.ainotebook.domain.math.MathSolver
 import com.debayan.ainotebook.domain.model.ai.AiGenerationRequest
 import com.debayan.ainotebook.domain.model.ai.AiGenerationState
 import com.debayan.ainotebook.domain.model.canvas.BoundingBox
@@ -53,6 +54,7 @@ class NotebookCanvasViewModel @Inject constructor(
     private val deleteStroke: DeleteStrokeUseCase,
     private val generateAiResponse: GenerateAiResponseUseCase,
     private val getPageContext: GetPageContextUseCase,
+    private val mathSolver: MathSolver,
     private val requestPageOcr: RequestPageOcrUseCase,
     private val observeNotebook: ObserveNotebookUseCase,
     private val renameNotebookUseCase: RenameNotebookUseCase,
@@ -165,6 +167,8 @@ class NotebookCanvasViewModel @Inject constructor(
                     undoStack.addLast(CanvasCommand.AddStroke(stroke))
                     redoStack.clear()
                     refreshHistory()
+                    // Retire any stale answer while the user keeps writing; it recomputes on pause.
+                    _uiState.update { it.copy(answerOverlay = null) }
                     requestOcr()
                     scheduleAutoAi()
                 }
@@ -230,12 +234,17 @@ class NotebookCanvasViewModel @Inject constructor(
         }
     }
 
-    /** Schedules background OCR indexing for the current page when enabled in settings. */
+    /**
+     * Schedules background OCR for the current page. Runs for search indexing, and also whenever
+     * automatic AI is on so the auto-solve has fresh recognized text to work from.
+     */
     private fun requestOcr() {
         val page = pageId ?: return
         viewModelScope.launch {
             val prefs = settingsRepository.userPreferences.first()
-            if (prefs.ocrEnabled && prefs.automaticIndexing) {
+            val forIndexing = prefs.ocrEnabled && prefs.automaticIndexing
+            val forAutoAi = prefs.ocrEnabled && prefs.aiEnabled && prefs.automaticAiGeneration
+            if (forIndexing || forAutoAi) {
                 requestPageOcr(RequestPageOcrUseCase.Params(notebookId = notebookId, pageId = page))
             }
         }
@@ -282,21 +291,46 @@ class NotebookCanvasViewModel @Inject constructor(
         aiJob?.cancel()
         aiJob = viewModelScope.launch {
             val context = pageId?.let { getPageContext(it).getOrDefault("") }.orEmpty()
+            // Instantly write a clean answer onto the canvas when this is a math problem.
+            firstMathSolution(instruction, context)?.let { placeAnswerOverlay(it.canvasLine) }
             generateAiResponse(AiGenerationRequest(userInstruction = instruction, contextText = context))
                 .collect { state -> _uiState.update { it.copy(aiState = state) } }
         }
     }
 
-    /** After the user pauses (per settings), auto-generates from the handwriting — real-time assist. */
+    /**
+     * After the user pauses (per settings), reads the recognized handwriting and — if it's a math
+     * problem — solves it instantly and writes the clean answer onto the canvas. Non-math text is left
+     * for the user to invoke manually, so the auto path never triggers the slower language model.
+     */
     private fun scheduleAutoAi() {
         if (!aiEnabledPref || !autoAiEnabled) return
         autoAiJob?.cancel()
         autoAiJob = viewModelScope.launch {
             delay(inactivityMs)
-            _uiState.update { it.copy(aiPanelVisible = true) }
-            generateAi("")
+            val context = pageId?.let { getPageContext(it).getOrDefault("") }.orEmpty()
+            val solution = mathSolver.solve(context) ?: return@launch
+            placeAnswerOverlay(solution.canvasLine)
+            _uiState.update { it.copy(aiState = AiGenerationState.Completed(solution.displayText)) }
         }
     }
+
+    /** First math solution from the instruction or the page context, if either is solvable. */
+    private fun firstMathSolution(instruction: String, context: String) =
+        sequenceOf(instruction, context)
+            .filter { it.isNotBlank() }
+            .firstNotNullOfOrNull { mathSolver.solve(it) }
+
+    /** Anchors a clean answer just below the most recent handwriting. */
+    private fun placeAnswerOverlay(text: String) {
+        val recent = _uiState.value.strokes.takeLast(RECENT_STROKES_FOR_ANCHOR)
+        if (recent.isEmpty()) return
+        val left = recent.minOf { it.boundingBox.left }
+        val bottom = recent.maxOf { it.boundingBox.bottom }
+        _uiState.update { it.copy(answerOverlay = AnswerOverlay(text, left, bottom + ANSWER_GAP_WORLD)) }
+    }
+
+    fun dismissAnswerOverlay() = _uiState.update { it.copy(answerOverlay = null) }
 
     /** Stops generation, keeping any text produced so far. */
     fun stopAi() {
@@ -331,6 +365,12 @@ class NotebookCanvasViewModel @Inject constructor(
         const val ERASE_RADIUS = 12f
         const val HIGHLIGHTER_COLOR = 0xFFFFF176
         const val WHITE_INK = 0xFFFFFFFF
+
+        /** How many trailing strokes define the "current problem" the answer is anchored to. */
+        const val RECENT_STROKES_FOR_ANCHOR = 12
+
+        /** Vertical gap (world units) between the handwriting and the written answer. */
+        const val ANSWER_GAP_WORLD = 28f
     }
 }
 

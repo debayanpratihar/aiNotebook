@@ -22,12 +22,18 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.sp
 import com.debayan.ainotebook.domain.model.canvas.BoundingBox
 import com.debayan.ainotebook.domain.model.canvas.Stroke
 import com.debayan.ainotebook.domain.model.canvas.StrokePoint
 import com.debayan.ainotebook.feature.canvas.engine.BrushSettings
 import com.debayan.ainotebook.feature.canvas.engine.CanvasToolMode
 import com.debayan.ainotebook.feature.canvas.engine.StrokeSmoothing
+import com.debayan.ainotebook.feature.canvas.presentation.AnswerOverlay
 import com.debayan.ainotebook.feature.canvas.render.Camera
 import com.debayan.ainotebook.feature.canvas.render.CanvasTemplate
 import com.debayan.ainotebook.feature.canvas.render.drawStroke
@@ -61,9 +67,12 @@ fun InfiniteCanvas(
     onEraseAt: (Float, Float) -> Unit,
     modifier: Modifier = Modifier,
     onZoomChanged: (Float) -> Unit = {},
+    answerOverlay: AnswerOverlay? = null,
+    answerColor: Color = Color(0xFF1E88E5),
 ) {
     var camera by remember { mutableStateOf(Camera()) }
     val activePoints = remember { mutableStateListOf<StrokePoint>() }
+    val textMeasurer = rememberTextMeasurer()
 
     // Latest callbacks, so the long-lived gesture coroutine never calls a stale lambda.
     val currentOnStrokeCompleted by rememberUpdatedState(onStrokeCompleted)
@@ -163,6 +172,16 @@ fun InfiniteCanvas(
                     width = brush.width,
                     opacity = brush.effectiveOpacity,
                     highlighter = brush.isHighlighter,
+                )
+            }
+
+            // Clean AI answer written into the notebook next to the user's handwriting.
+            answerOverlay?.let { overlay ->
+                drawText(
+                    textMeasurer = textMeasurer,
+                    text = overlay.text,
+                    topLeft = Offset(overlay.worldX, overlay.worldY),
+                    style = TextStyle(color = answerColor, fontSize = 22.sp, fontWeight = FontWeight.SemiBold),
                 )
             }
         }
