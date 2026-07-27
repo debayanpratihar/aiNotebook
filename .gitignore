@@ -13,3 +13,7 @@
 *.keystore
 !debug.keystore
 /models/
+
+# Release signing — never commit
+keystore.properties
+*.jks

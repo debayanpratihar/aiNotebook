@@ -13,7 +13,9 @@ import com.debayan.ainotebook.domain.model.canvas.StrokePoint
 import com.debayan.ainotebook.domain.model.canvas.ToolType
 import com.debayan.ainotebook.domain.repository.SettingsRepository
 import com.debayan.ainotebook.domain.usecase.ai.GenerateAiResponseUseCase
+import com.debayan.ainotebook.domain.usecase.notebook.ObserveNotebookUseCase
 import com.debayan.ainotebook.domain.usecase.notebook.OpenNotebookUseCase
+import com.debayan.ainotebook.domain.usecase.notebook.RenameNotebookUseCase
 import com.debayan.ainotebook.domain.usecase.ocr.RequestPageOcrUseCase
 import com.debayan.ainotebook.domain.usecase.stroke.DeleteStrokeUseCase
 import com.debayan.ainotebook.domain.usecase.stroke.ObservePageStrokesUseCase
@@ -47,6 +49,8 @@ class NotebookCanvasViewModel @Inject constructor(
     private val deleteStroke: DeleteStrokeUseCase,
     private val generateAiResponse: GenerateAiResponseUseCase,
     private val requestPageOcr: RequestPageOcrUseCase,
+    private val observeNotebook: ObserveNotebookUseCase,
+    private val renameNotebookUseCase: RenameNotebookUseCase,
     private val settingsRepository: SettingsRepository,
     private val timeProvider: TimeProvider,
     savedStateHandle: SavedStateHandle,
@@ -70,8 +74,27 @@ class NotebookCanvasViewModel @Inject constructor(
     /** Ids deleted but not yet gone from the observed list, so a fast erase drag can't double-delete. */
     private val pendingErased = mutableSetOf<String>()
 
+    /** Current drawing ink for pen-like tools, and whether the user has chosen it explicitly. */
+    private var inkColor: Long = BrushSettings.DEFAULT_INK
+    private var hasCustomColor: Boolean = false
+
     init {
         loadNotebook()
+        observeNotebookTitle()
+    }
+
+    private fun observeNotebookTitle() {
+        observeNotebook(notebookId)
+            .onEach { notebook ->
+                _uiState.update { it.copy(notebookTitle = notebook?.title ?: "Notebook") }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    fun renameNotebook(title: String) {
+        viewModelScope.launch {
+            renameNotebookUseCase(RenameNotebookUseCase.Params(notebookId = notebookId, title = title))
+        }
     }
 
     private fun loadNotebook() {
@@ -201,6 +224,29 @@ class NotebookCanvasViewModel @Inject constructor(
 
     fun selectEraser() = _uiState.update { it.copy(toolMode = CanvasToolMode.STROKE_ERASER) }
 
+    /** Sets an explicit drawing color (from a swatch or the custom picker). */
+    fun selectColor(color: Long) {
+        hasCustomColor = true
+        inkColor = color
+        _uiState.update { it.copy(toolMode = CanvasToolMode.DRAW, brush = it.brush.copy(color = color)) }
+    }
+
+    /**
+     * Applies a theme-appropriate default ink (white in dark mode, near-black in light) unless the
+     * user has already picked a color, so strokes stay visible against the canvas background.
+     */
+    fun applyThemeInk(isDark: Boolean) {
+        if (hasCustomColor) return
+        inkColor = if (isDark) WHITE_INK else BrushSettings.DEFAULT_INK
+        _uiState.update { current ->
+            if (current.brush.tool == ToolType.HIGHLIGHTER) {
+                current
+            } else {
+                current.copy(brush = current.brush.copy(color = inkColor))
+            }
+        }
+    }
+
     fun onZoomChanged(scale: Float) =
         _uiState.update { it.copy(zoomPercent = (scale * 100f).toInt()) }
 
@@ -232,9 +278,9 @@ class NotebookCanvasViewModel @Inject constructor(
 
     private fun brushFor(tool: ToolType): BrushSettings = when (tool) {
         ToolType.HIGHLIGHTER -> BrushSettings(tool = tool, color = HIGHLIGHTER_COLOR, width = 18f, opacity = 0.4f)
-        ToolType.MARKER -> BrushSettings(tool = tool, color = BrushSettings.DEFAULT_INK, width = 8f)
-        ToolType.PENCIL -> BrushSettings(tool = tool, color = BrushSettings.DEFAULT_INK, width = 2.5f)
-        else -> BrushSettings(tool = ToolType.BALL_PEN, color = BrushSettings.DEFAULT_INK, width = 3f)
+        ToolType.MARKER -> BrushSettings(tool = tool, color = inkColor, width = 8f)
+        ToolType.PENCIL -> BrushSettings(tool = tool, color = inkColor, width = 2.5f)
+        else -> BrushSettings(tool = ToolType.BALL_PEN, color = inkColor, width = 3f)
     }
 
     override fun onCleared() {
@@ -246,6 +292,7 @@ class NotebookCanvasViewModel @Inject constructor(
     private companion object {
         const val ERASE_RADIUS = 12f
         const val HIGHLIGHTER_COLOR = 0xFFFFF176
+        const val WHITE_INK = 0xFFFFFFFF
     }
 }
 

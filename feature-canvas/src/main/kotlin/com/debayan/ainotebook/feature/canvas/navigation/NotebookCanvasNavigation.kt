@@ -46,6 +46,9 @@ fun NavGraphBuilder.notebookCanvasScreen(
             onGenerateAi = viewModel::generateAi,
             onStopAi = viewModel::stopAi,
             onExport = { onExport(notebookId) },
+            onRenameNotebook = viewModel::renameNotebook,
+            onSelectColor = viewModel::selectColor,
+            onApplyThemeInk = viewModel::applyThemeInk,
         )
     }
 }

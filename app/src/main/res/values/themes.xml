@@ -10,4 +10,11 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">?android:attr/colorBackground</item>
     </style>
+
+    <!-- Splash screen shown at cold start; hands off to Theme.AiNotebook once content is ready. -->
+    <style name="Theme.AiNotebook.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.AiNotebook</item>
+    </style>
 </resources>

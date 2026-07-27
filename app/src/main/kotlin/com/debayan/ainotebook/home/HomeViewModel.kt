@@ -7,6 +7,8 @@ import com.debayan.ainotebook.domain.model.Notebook
 import com.debayan.ainotebook.domain.repository.NotebookRepository
 import com.debayan.ainotebook.domain.usecase.export.ImportNotebookUseCase
 import com.debayan.ainotebook.domain.usecase.notebook.CreateNotebookUseCase
+import com.debayan.ainotebook.domain.usecase.notebook.DeleteNotebookUseCase
+import com.debayan.ainotebook.domain.usecase.notebook.RenameNotebookUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,6 +22,8 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val createNotebookUseCase: CreateNotebookUseCase,
     private val importNotebookUseCase: ImportNotebookUseCase,
+    private val renameNotebookUseCase: RenameNotebookUseCase,
+    private val deleteNotebookUseCase: DeleteNotebookUseCase,
     notebookRepository: NotebookRepository,
 ) : ViewModel() {
 
@@ -45,6 +49,16 @@ class HomeViewModel @Inject constructor(
                 is AppResult.Failure -> _importError.value = "Couldn't import this file. It may be invalid or corrupted."
             }
         }
+    }
+
+    fun renameNotebook(id: String, title: String) {
+        viewModelScope.launch {
+            renameNotebookUseCase(RenameNotebookUseCase.Params(notebookId = id, title = title))
+        }
+    }
+
+    fun deleteNotebook(id: String) {
+        viewModelScope.launch { deleteNotebookUseCase(id) }
     }
 
     fun consumeImportError() {

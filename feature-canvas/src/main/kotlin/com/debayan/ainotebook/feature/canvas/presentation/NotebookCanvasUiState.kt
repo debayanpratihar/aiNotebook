@@ -9,6 +9,7 @@ import com.debayan.ainotebook.feature.canvas.engine.CanvasToolMode
 /** Immutable UI state for the notebook canvas screen. */
 data class NotebookCanvasUiState(
     val isLoading: Boolean = true,
+    val notebookTitle: String = "Notebook",
     val page: Page? = null,
     val strokes: List<Stroke> = emptyList(),
     val toolMode: CanvasToolMode = CanvasToolMode.DRAW,

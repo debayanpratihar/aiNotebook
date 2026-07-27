@@ -1,5 +1,8 @@
 package com.debayan.ainotebook.feature.canvas.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,11 +14,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -25,18 +32,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import com.debayan.ainotebook.common.component.LoadingIndicator
 import com.debayan.ainotebook.domain.model.ai.AiGenerationState
 import com.debayan.ainotebook.domain.model.canvas.StrokePoint
@@ -61,11 +74,25 @@ fun NotebookCanvasScreen(
     onGenerateAi: (String) -> Unit,
     onStopAi: () -> Unit,
     onExport: () -> Unit,
+    onRenameNotebook: (String) -> Unit,
+    onSelectColor: (Long) -> Unit,
+    onApplyThemeInk: (Boolean) -> Unit,
 ) {
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var showColorPicker by remember { mutableStateOf(false) }
+
+    val isDarkCanvas = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    LaunchedEffect(isDarkCanvas) { onApplyThemeInk(isDarkCanvas) }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notebook") },
+                title = {
+                    Text(
+                        text = state.notebookTitle,
+                        modifier = Modifier.clickable { showRenameDialog = true },
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -89,6 +116,8 @@ fun NotebookCanvasScreen(
                 onSelectTool = onSelectTool,
                 onSelectEraser = onSelectEraser,
                 onToggleAiPanel = onToggleAiPanel,
+                onSelectColor = onSelectColor,
+                onOpenCustomColor = { showColorPicker = true },
             )
         },
     ) { innerPadding ->
@@ -124,7 +153,63 @@ fun NotebookCanvasScreen(
             }
         }
     }
+
+    if (showRenameDialog) {
+        RenameNotebookDialog(
+            initialTitle = state.notebookTitle,
+            onConfirm = {
+                onRenameNotebook(it)
+                showRenameDialog = false
+            },
+            onDismiss = { showRenameDialog = false },
+        )
+    }
+
+    if (showColorPicker) {
+        ColorPickerDialog(
+            initial = state.brush.color,
+            onConfirm = {
+                onSelectColor(it)
+                showColorPicker = false
+            },
+            onDismiss = { showColorPicker = false },
+        )
+    }
 }
+
+@Composable
+private fun RenameNotebookDialog(
+    initialTitle: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var text by remember { mutableStateOf(initialTitle) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rename notebook") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                singleLine = true,
+                label = { Text("Title") },
+            )
+        },
+        confirmButton = { TextButton(onClick = { onConfirm(text) }) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+private val CANVAS_PALETTE = listOf(
+    0xFF1B1B1F, // ink
+    0xFFFFFFFF, // white
+    0xFFE53935, // red
+    0xFFFB8C00, // orange
+    0xFFFDD835, // yellow
+    0xFF43A047, // green
+    0xFF1E88E5, // blue
+    0xFF8E24AA, // purple
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,6 +218,8 @@ private fun CanvasToolbar(
     onSelectTool: (ToolType) -> Unit,
     onSelectEraser: () -> Unit,
     onToggleAiPanel: () -> Unit,
+    onSelectColor: (Long) -> Unit,
+    onOpenCustomColor: () -> Unit,
 ) {
     val writingTools = listOf(
         ToolType.BALL_PEN to "Pen",
@@ -141,31 +228,117 @@ private fun CanvasToolbar(
         ToolType.HIGHLIGHTER to "Highlighter",
     )
     Surface(tonalElevation = 3.dp) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            writingTools.forEach { (tool, label) ->
+        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                CANVAS_PALETTE.forEach { swatch ->
+                    ColorSwatch(
+                        colorArgb = swatch,
+                        selected = state.brush.color == swatch,
+                        onClick = { onSelectColor(swatch) },
+                    )
+                }
+                IconButton(onClick = onOpenCustomColor) {
+                    Icon(Icons.Filled.Add, contentDescription = "Custom color")
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                writingTools.forEach { (tool, label) ->
+                    FilterChip(
+                        selected = state.toolMode == CanvasToolMode.DRAW && state.brush.tool == tool,
+                        onClick = { onSelectTool(tool) },
+                        label = { Text(label) },
+                    )
+                }
                 FilterChip(
-                    selected = state.toolMode == CanvasToolMode.DRAW && state.brush.tool == tool,
-                    onClick = { onSelectTool(tool) },
-                    label = { Text(label) },
+                    selected = state.toolMode == CanvasToolMode.STROKE_ERASER,
+                    onClick = onSelectEraser,
+                    label = { Text("Eraser") },
+                )
+                FilterChip(
+                    selected = state.aiPanelVisible,
+                    onClick = onToggleAiPanel,
+                    label = { Text("AI") },
                 )
             }
-            FilterChip(
-                selected = state.toolMode == CanvasToolMode.STROKE_ERASER,
-                onClick = onSelectEraser,
-                label = { Text("Eraser") },
-            )
-            FilterChip(
-                selected = state.aiPanelVisible,
-                onClick = onToggleAiPanel,
-                label = { Text("AI") },
-            )
         }
+    }
+}
+
+@Composable
+private fun ColorSwatch(colorArgb: Long, selected: Boolean, onClick: () -> Unit) {
+    val borderColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+    Box(
+        modifier = Modifier
+            .size(28.dp)
+            .clip(CircleShape)
+            .background(Color(colorArgb.toInt()))
+            .border(width = if (selected) 2.dp else 1.dp, color = borderColor, shape = CircleShape)
+            .clickable(onClick = onClick),
+    )
+}
+
+@Composable
+private fun ColorPickerDialog(initial: Long, onConfirm: (Long) -> Unit, onDismiss: () -> Unit) {
+    val start = Color(initial.toInt())
+    var red by remember { mutableStateOf((start.red * 255f).roundToInt()) }
+    var green by remember { mutableStateOf((start.green * 255f).roundToInt()) }
+    var blue by remember { mutableStateOf((start.blue * 255f).roundToInt()) }
+    val current: Long = 0xFF000000L or (red.toLong() shl 16) or (green.toLong() shl 8) or blue.toLong()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Custom color") },
+        text = {
+            Column {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(current.toInt())),
+                )
+                ColorSlider("R", red) { red = it }
+                ColorSlider("G", green) { green = it }
+                ColorSlider("B", blue) { blue = it }
+                Text(
+                    text = "#%06X".format(current.toInt() and 0xFFFFFF),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onConfirm(current) }) { Text("Select") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+@Composable
+private fun ColorSlider(label: String, value: Int, onChange: (Int) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = "$label $value",
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(end = 8.dp),
+        )
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { onChange(it.roundToInt()) },
+            valueRange = 0f..255f,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 

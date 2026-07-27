@@ -5,6 +5,7 @@ import com.debayan.ainotebook.core.result.AppError
 import com.debayan.ainotebook.core.result.AppResult
 import com.debayan.ainotebook.data.remote.config.ConfigService
 import com.debayan.ainotebook.data.remote.config.toDomain
+import com.debayan.ainotebook.data.remote.config.toEntries
 import com.debayan.ainotebook.domain.model.ai.Announcement
 import com.debayan.ainotebook.domain.model.ai.ChangelogEntry
 import com.debayan.ainotebook.domain.model.ai.ModelCatalog
@@ -31,7 +32,7 @@ class ConfigRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getChangelog(): AppResult<List<ChangelogEntry>> = networkCall {
-        service.fetchChangelog().map { it.toDomain() }
+        service.fetchChangelog().toEntries()
     }
 
     private suspend fun <T> networkCall(block: () -> T): AppResult<T> =

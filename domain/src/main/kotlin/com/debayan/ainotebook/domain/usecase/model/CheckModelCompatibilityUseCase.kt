@@ -25,7 +25,10 @@ class CheckModelCompatibilityUseCase @Inject constructor(
     }
 
     private fun evaluate(model: RemoteModel, device: DeviceCapabilities): ModelCompatibility {
-        val meetsMinRam = device.totalRamMb >= model.minRamMb
+        // Reported RAM is typically a little below the advertised amount, so allow a small tolerance
+        // against the minimum requirement (a "4 GB" device reports ~3.7 GB).
+        val requiredMinRam = (model.minRamMb * MIN_RAM_TOLERANCE).toLong()
+        val meetsMinRam = device.totalRamMb >= requiredMinRam
         val meetsRecommendedRam = device.totalRamMb >= model.recommendedRamMb
         val hasEnoughStorage = device.freeStorageBytes >= model.sizeBytes + STORAGE_HEADROOM_BYTES
         val abiSupported = model.supportedAbis.isEmpty() ||
@@ -54,5 +57,8 @@ class CheckModelCompatibilityUseCase @Inject constructor(
     private companion object {
         /** Extra free space required beyond the model size, so installation never fills the disk. */
         const val STORAGE_HEADROOM_BYTES = 200L * 1024 * 1024
+
+        /** Fraction of the advertised minimum RAM the device must report (accounts for reserved RAM). */
+        const val MIN_RAM_TOLERANCE = 0.9
     }
 }

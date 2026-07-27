@@ -23,7 +23,13 @@ DataStore-backed settings, and Model Manager / Settings / Search / AI-panel UI.
 package (validated, id-remapped import), PDF + PNG/JPEG export with share-sheet, canvas viewport
 culling + path caching, and a test suite (unit tests, Room v1→v2 migration test, Hilt test runner).
 
-Remaining: Play Store release preparation (Phase 5).
+**Phase 5 — release preparation: complete.** Unique adaptive launcher icon (+ monochrome themed
+icon), splash screen, debug/release build variants, conditional release signing
+(`keystore.properties`), R8 keep rules for kotlinx.serialization + the JNI boundary, and release docs
+(`docs/RELEASE_CHECKLIST.md`, `docs/STORE_LISTING.md`). Build the store artifact with
+`./gradlew :app:bundleRelease`.
+
+All five phases are implemented.
 
 ## Two documented follow-ups (require a device/native build)
 1. **Native inference** — vendor llama.cpp + NDK build to enable on-device generation.

@@ -18,11 +18,13 @@ class ConfigService @Inject constructor(
 ) {
     fun fetchConfig(): RemoteConfigDto = json.decodeFromString(body(CONFIG_FILE))
 
-    fun fetchModels(): List<RemoteModelDto> = json.decodeFromString(body(MODELS_FILE))
+    fun fetchModels(): List<RemoteModelDto> =
+        json.decodeFromString<ModelsResponseDto>(body(MODELS_FILE)).models
 
-    fun fetchAnnouncements(): List<AnnouncementDto> = json.decodeFromString(body(ANNOUNCEMENTS_FILE))
+    fun fetchAnnouncements(): List<AnnouncementDto> =
+        listOf(json.decodeFromString<AnnouncementDto>(body(ANNOUNCEMENTS_FILE)))
 
-    fun fetchChangelog(): List<ChangelogEntryDto> = json.decodeFromString(body(CHANGELOG_FILE))
+    fun fetchChangelog(): ChangelogResponseDto = json.decodeFromString(body(CHANGELOG_FILE))
 
     private fun body(fileName: String): String {
         val request = Request.Builder()

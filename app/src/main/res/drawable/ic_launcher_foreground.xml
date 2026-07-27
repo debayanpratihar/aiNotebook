@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  AI Notebook launcher icon foreground: a white notebook page with an indigo spine and ruled lines,
+  topped by an amber "AI spark". Drawn within the adaptive-icon safe zone (108dp viewport).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Notebook page -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M40,26 L68,26 Q74,26 74,32 L74,76 Q74,82 68,82 L40,82 Q34,82 34,76 L34,32 Q34,26 40,26 Z" />
+
+    <!-- Spine -->
+    <path
+        android:fillColor="#FF4A5BC4"
+        android:pathData="M34,32 Q34,26 40,26 L44,26 L44,82 L40,82 Q34,82 34,76 Z" />
+
+    <!-- Ruled lines -->
+    <path
+        android:strokeColor="#FF4A5BC4"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M50,44 L68,44" />
+    <path
+        android:strokeColor="#FF4A5BC4"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M50,56 L68,56" />
+    <path
+        android:strokeColor="#FF4A5BC4"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M50,68 L64,68" />
+
+    <!-- AI spark (four-point star) -->
+    <path
+        android:fillColor="#FFF4BE48"
+        android:pathData="M70,22 L72.5,28 L78,30.5 L72.5,33 L70,39 L67.5,33 L62,30.5 L67.5,28 Z" />
+</vector>

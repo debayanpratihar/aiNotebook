@@ -6,48 +6,55 @@ import com.debayan.ainotebook.domain.model.ai.ModelTier
 import com.debayan.ainotebook.domain.model.ai.RemoteConfig
 import com.debayan.ainotebook.domain.model.ai.RemoteModel
 
+private const val BYTES_PER_MB = 1024L * 1024L
+private const val MB_PER_GB = 1024
+
 fun RemoteConfigDto.toDomain(): RemoteConfig = RemoteConfig(
-    minAppVersionCode = minAppVersionCode,
-    latestAppVersionCode = latestAppVersionCode,
-    recommendedModelId = recommendedModelId,
+    minAppVersionCode = minimumAppVersion,
+    latestAppVersionCode = 0,
+    recommendedModelId = defaultModel,
     configVersion = configVersion,
 )
 
 fun RemoteModelDto.toDomain(): RemoteModel = RemoteModel(
     id = id,
-    name = name,
-    version = version,
+    name = name.ifBlank { id },
+    version = version.toString(),
     provider = provider,
-    tier = tier.toModelTier(),
+    tier = tierFromId(id),
     quantization = quantization,
-    fileName = fileName,
-    sizeBytes = sizeBytes,
+    fileName = filename,
+    sizeBytes = downloadSizeMB * BYTES_PER_MB,
     sha256 = sha256,
     downloadUrl = downloadUrl,
-    minRamMb = minRamMb,
-    recommendedRamMb = recommendedRamMb,
-    minSdk = minSdk,
-    supportedAbis = supportedAbis,
+    // The config expresses RAM in GB and has no separate "recommended RAM", so minimum doubles as
+    // the recommended figure for the recommendation heuristic.
+    minRamMb = minRamGB * MB_PER_GB,
+    recommendedRamMb = minRamGB * MB_PER_GB,
+    minSdk = DEFAULT_MIN_SDK,
+    supportedAbis = emptyList(),
     description = description,
 )
 
 fun AnnouncementDto.toDomain(): Announcement = Announcement(
-    id = id,
+    id = id.ifBlank { title },
     title = title,
     message = message,
     severity = severity,
     publishedAt = publishedAt,
 )
 
-fun ChangelogEntryDto.toDomain(): ChangelogEntry = ChangelogEntry(
-    versionName = versionName,
-    versionCode = versionCode,
-    notes = notes,
-    releasedAt = releasedAt,
-)
+fun ChangelogResponseDto.toEntries(): List<ChangelogEntry> =
+    if (latestVersion.isBlank() && changes.isEmpty()) {
+        emptyList()
+    } else {
+        listOf(ChangelogEntry(versionName = latestVersion, versionCode = 0, notes = changes, releasedAt = 0L))
+    }
 
-private fun String.toModelTier(): ModelTier = when (uppercase().replace('-', '_')) {
-    "COMPACT" -> ModelTier.COMPACT
-    "HIGH_QUALITY", "HIGHQUALITY" -> ModelTier.HIGH_QUALITY
+private fun tierFromId(id: String): ModelTier = when (id.lowercase()) {
+    "compact" -> ModelTier.COMPACT
+    "high", "high_quality" -> ModelTier.HIGH_QUALITY
     else -> ModelTier.BALANCED
 }
+
+private const val DEFAULT_MIN_SDK = 26
