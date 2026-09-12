@@ -20,4 +20,6 @@ data class InstalledModel(
     val installedAt: Long,
     val lastUsedAt: Long?,
     val isActive: Boolean,
+    /** Which backend can run this file. Inferred from the file name for pre-existing rows. */
+    val format: ModelFormat = ModelFormat.fromFileName(fileName),
 )

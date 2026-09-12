@@ -37,3 +37,8 @@ include(":feature-settings")
 include(":feature-models")
 include(":feature-search")
 include(":feature-export")
+// Handwriting-training flow: teaches the app the user's glyphs so replies can be written back in
+// their own hand.
+include(":feature-onboarding")
+// Solve sheet, recognition-correction editor, and the bring-your-own-API-key provider manager.
+include(":feature-ai")

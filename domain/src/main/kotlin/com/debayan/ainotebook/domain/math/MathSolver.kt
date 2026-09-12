@@ -31,7 +31,7 @@ class MathSolver @Inject constructor() {
 
     private fun solveArithmetic(input: String): MathSolution? {
         val expr = ExpressionParser(input).parse()
-        if (collectVars(expr).isNotEmpty()) return null // has an unknown → not a plain calculation
+        if (expr.variables().isNotEmpty()) return null // has an unknown → not a plain calculation
         val value = ExpressionEvaluator.eval(expr)
         if (value.isNaN() || value.isInfinite()) return null
         return MathSolution(
@@ -48,7 +48,7 @@ class MathSolver @Inject constructor() {
         if (sides.size != 2) return null
         val lhs = ExpressionParser(sides[0]).parse()
         val rhs = ExpressionParser(sides[1]).parse()
-        val variables = collectVars(lhs) + collectVars(rhs)
+        val variables = lhs.variables() + rhs.variables()
 
         if (variables.isEmpty()) {
             val equal = abs(ExpressionEvaluator.eval(lhs) - ExpressionEvaluator.eval(rhs)) < 1e-9
@@ -121,14 +121,6 @@ class MathSolver @Inject constructor() {
 
     private fun isIntegral(s: String): Boolean =
         s.contains("integral") || s.contains("integrate")
-
-    private fun collectVars(expr: Expr): Set<String> = when (expr) {
-        is Expr.Num -> emptySet()
-        is Expr.Var -> setOf(expr.name)
-        is Expr.Unary -> collectVars(expr.operand)
-        is Expr.Binary -> collectVars(expr.left) + collectVars(expr.right)
-        is Expr.Func -> collectVars(expr.arg)
-    }
 
     private fun polyCoeff(poly: Polynomial, exp: Int): Double = poly.terms[exp] ?: 0.0
 

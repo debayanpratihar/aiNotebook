@@ -12,19 +12,25 @@ class MathParseException(message: String) : Exception(message)
  * term       := unary (('*' | '/' | '%') unary | implicit-unary)*
  * unary      := ('+' | '-') unary | power
  * power      := primary ('^' unary)?          // right-associative
- * primary    := number | constant | func '(' expression ')' | '(' expression ')' | variable
+ * primary    := number | constant | func '(' arguments ')' | '(' expression ')' | variable
+ * arguments  := expression (',' expression)*
  * ```
- * Implicit multiplication (`2x`, `3(4)`, `2sqrt(9)`) is supported. Constants `pi`/`e` are folded to
- * numbers. Unknown identifiers become variables (used by the polynomial/equation paths).
+ * Implicit multiplication (`2x`, `3(4)`, `2sqrt(9)`) is supported. Constants `pi`/`e` become
+ * [Expr.Const] so they survive differentiation and printing as names. Unknown identifiers become
+ * variables (used by the polynomial/equation paths).
+ *
+ * Numeric literals keep the rational they were written as alongside their double value: dropping
+ * that is what makes `0.1 + 0.2` answer `0.30000000000000004`.
  */
 class ExpressionParser(input: String) {
 
     private sealed interface Token {
-        data class Number(val value: Double) : Token
+        data class Number(val value: Double, val text: String) : Token
         data class Ident(val name: String) : Token
         data class Op(val ch: Char) : Token
         data object LParen : Token
         data object RParen : Token
+        data object Comma : Token
     }
 
     private val tokens: List<Token> = tokenize(input)
@@ -91,19 +97,29 @@ class ExpressionParser(input: String) {
     }
 
     private fun parsePrimary(): Expr = when (val t = next()) {
-        is Token.Number -> Expr.Num(t.value)
+        is Token.Number -> Expr.Num(t.value, Rational.parse(t.text))
         Token.LParen -> parseExpression().also { expect(Token.RParen) }
         is Token.Ident -> if (peek() == Token.LParen) {
             next()
-            Expr.Func(t.name, parseExpression()).also { expect(Token.RParen) }
+            Expr.Func(t.name, parseArguments())
         } else {
             when (t.name) {
-                "pi" -> Expr.Num(kotlin.math.PI)
-                "e" -> Expr.Num(kotlin.math.E)
+                "pi" -> Expr.Const("pi", kotlin.math.PI)
+                "e" -> Expr.Const("e", kotlin.math.E)
                 else -> Expr.Var(t.name)
             }
         }
         else -> throw MathParseException("Unexpected token: $t")
+    }
+
+    private fun parseArguments(): List<Expr> {
+        val args = mutableListOf(parseExpression())
+        while (peek() == Token.Comma) {
+            next()
+            args += parseExpression()
+        }
+        expect(Token.RParen)
+        return args
     }
 
     private fun expect(token: Token) {
@@ -122,7 +138,7 @@ class ExpressionParser(input: String) {
                     while (i < input.length && (input[i].isDigit() || input[i] == '.')) i++
                     val text = input.substring(start, i)
                     val value = text.toDoubleOrNull() ?: throw MathParseException("Bad number: $text")
-                    result += Token.Number(value)
+                    result += Token.Number(value, text)
                 }
                 c.isLetter() -> {
                     val start = i
@@ -139,6 +155,10 @@ class ExpressionParser(input: String) {
                 }
                 c == ')' || c == ']' || c == '}' -> {
                     result += Token.RParen
+                    i++
+                }
+                c == ',' -> {
+                    result += Token.Comma
                     i++
                 }
                 else -> throw MathParseException("Unexpected character: '$c'")

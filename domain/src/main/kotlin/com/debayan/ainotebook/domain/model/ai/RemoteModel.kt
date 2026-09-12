@@ -1,8 +1,11 @@
 package com.debayan.ainotebook.domain.model.ai
 
 /**
- * A model advertised by the remote configuration (models.json). Describes a downloadable GGUF model
- * and the device requirements used to decide whether it can be installed.
+ * A model advertised by the remote configuration (models.json), plus the device requirements used to
+ * decide whether it can be installed.
+ *
+ * [format] decides which backend will run it, and defaults to being inferred from the file name so
+ * an existing catalog entry that predates the MediaPipe backend keeps resolving to GGUF.
  */
 data class RemoteModel(
     val id: String,
@@ -20,4 +23,5 @@ data class RemoteModel(
     val minSdk: Int,
     val supportedAbis: List<String>,
     val description: String,
+    val format: ModelFormat = ModelFormat.fromFileName(fileName),
 )

@@ -83,6 +83,8 @@ dependencies {
     implementation(project(":feature-models"))
     implementation(project(":feature-search"))
     implementation(project(":feature-export"))
+    implementation(project(":feature-onboarding"))
+    implementation(project(":feature-ai"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
